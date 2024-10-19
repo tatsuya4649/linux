@@ -19,6 +19,7 @@
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/fs.h>
+#include <linux/limits.h>
 
 #include <asm/ftrace.h>
 
@@ -1187,5 +1188,12 @@ static inline void  disable_trace_on_warning(void) { }
 unsigned long arch_syscall_addr(int nr);
 
 #endif /* CONFIG_FTRACE_SYSCALLS */
+
+/*
+ * A marker to be used only to distinguish
+ * function address from trampoline code.
+ * So, this value has no meaning.
+ */
+#define FTRACE_TRAMPOLINE_MARKER  ((unsigned long) INT_MAX)
 
 #endif /* _LINUX_FTRACE_H */

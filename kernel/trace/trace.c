@@ -2978,6 +2978,18 @@ static void __ftrace_trace_stack(struct trace_array *tr,
 		nr_entries = stack_trace_save(fstack->calls, size, skip);
 	}
 
+	/* Mark entry of stack trace as trampoline code */
+	if (tr->ops && tr->ops->trampoline) {
+		unsigned long tramp_start = tr->ops->trampoline;
+		unsigned long tramp_end = tramp_start + tr->ops->trampoline_size;
+		unsigned long *calls = fstack->calls;
+
+		for (int i = 0; i < nr_entries; i++) {
+			if (calls[i] >= tramp_start && calls[i] < tramp_end)
+				calls[i] = FTRACE_TRAMPOLINE_MARKER;
+		}
+	}
+
 	event = __trace_buffer_lock_reserve(buffer, TRACE_STACK,
 				    struct_size(entry, caller, nr_entries),
 				    trace_ctx);
@@ -2988,11 +3000,6 @@ static void __ftrace_trace_stack(struct trace_array *tr,
 	entry->size = nr_entries;
 	memcpy(&entry->caller, fstack->calls,
 	       flex_array_size(entry, caller, nr_entries));
-
-#ifdef CONFIG_DYNAMIC_FTRACE
-	entry->trampoline = tr->ops ? tr->ops->trampoline : 0;
-	entry->trampoline_size = tr->ops ? tr->ops->trampoline_size : 0;
-#endif
 
 	if (!call_filter_check_discard(call, entry, buffer, event))
 		__buffer_unlock_commit(buffer, event);
